@@ -19,20 +19,22 @@ public:
 
 	attribute<number> distance_threshold{ this, "distance_threshold", 0.2, description {"..."} };
 			
-
-	long index = -1;
 	long counter = 0;
+	long index   = -1;
 
 	template<class matrix_type, size_t plane_count>
 	cell<matrix_type, plane_count> calc_cell(cell<matrix_type, plane_count> input, const matrix_info& info, matrix_coord& position) {
-		cell<matrix_type, plane_count> output;
+		cell<matrix_type, plane_count> outputCell;
 
+
+		// setto l'output = input
 		for (auto plane = 0; plane < info.plane_count(); ++plane)
 		{
-			output[plane] = input[plane];
+			outputCell[plane] = input[plane];
 		}
 
-		long currentPos = position.x();
+		// position.x() = coord cella corrente
+		long currentPos = position.x(); 
 
 		if ((counter % 2) == 0)
 		{	
@@ -45,20 +47,13 @@ public:
 					float sum = 0.0f;
 					for (auto plane = 0; plane < info.plane_count(); ++plane)
 					{
-						float val = otherCell[plane];
-						float val1 = input[plane];
-						float sub = otherCell[plane] - input[plane];
-						sum += (float)((otherCell[plane] - input[plane])*(otherCell[plane] - input[plane]));
+						sum += (float)(abs(otherCell[plane] - input[plane]));
 					}
-
+					
 					if (sum <= distance_threshold)
 					{
 						index = cellPos;
 						break;
-					}
-					else
-					{
-						index = -1;
 					}
 				}
 			}
@@ -68,9 +63,10 @@ public:
 			if (index != -1)
 			{	
 				auto otherCell = get_cell<matrix_type, plane_count>(info, index, 0);
+
 				for (auto plane = 0; plane < info.plane_count(); ++plane)
 				{
-					output[plane] = otherCell[plane];
+					outputCell[plane] = otherCell[plane];
 				}
 			}
 		}
@@ -78,7 +74,10 @@ public:
 		counter++;
 		if (counter > 1000) counter = 0;
 
-		return output;
+		// Chek pBABBO to see the actual value of the cell 
+		auto pBABBO = reinterpret_cast<matrix_type*>(info.m_bip);
+
+		return outputCell;
 	}
 
 private:
@@ -86,6 +85,7 @@ private:
 	cell<matrix_type, plane_count> get_cell(const matrix_info& info, int x, int y) {
 		auto x1 = clamp<decltype(x)>(x, 0, info.width() - 1);
 		auto y1 = clamp<decltype(y)>(y, 0, info.height() - 1);
+		// I clampo it per evitare overflow o underflow
 		auto c = info.in_cell<matrix_type, plane_count>(x1, y1);
 		return c;
 	}
